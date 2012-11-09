@@ -44,6 +44,39 @@ You can check the evaluation time with 'measure'
 
 For IO actions, use 'chronoIO'.
 
+Here's a full example, demonstrating both pure and IO functions:
+
+    > import Control.Applicative
+    > import System.Environment
+    > import Data.Chronograph
+    >
+    > import Text.Printf
+    >
+    > procFile :: FilePath -> IO ()
+    > procFile fp = do
+    >     doc <- readFile fp
+    >     let wc = length $ lines doc
+    >     putStrLn $ formatOutput fp (chrono wc)
+    >
+    > procIO :: FilePath -> IO ()
+    > procIO fp = do
+    >     wc <- chronoIO $ fileLinesIO fp
+    >     putStrLn $ formatOutput fp wc
+    >
+    > fileLinesIO :: FilePath -> IO Int
+    > fileLinesIO fp = length . lines <$> readFile fp
+    >
+    > formatOutput :: FilePath -> Chronograph Int -> String
+    > formatOutput fp chr = printf "%s :: %d, %s" fp (val chr) (show $ measure chr)
+    >
+    > main :: IO ()
+    > main = do
+    >     args <- getArgs
+    >     putStrLn "pure Chronograph"
+    >     mapM_ procFile args
+    >     putStrLn "IO Chronograph"
+    >     mapM_ procIO args
+
 Evaluation Order
 ----------------
 
