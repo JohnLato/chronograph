@@ -1,6 +1,56 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
+ -- |
+ -- Measure data and IO evaluation time in a lightweight manner.
+ --
+ -- A 'Chronograph a' has two parts, the value 'a' and the measurement of
+ -- evaluation time.  A Chronograph is lazy, so 'a' is only evaluted on demand.
+ --
+ -- This example counts the lines in a number of files, and records the
+ -- evaluation time taken for each one.
+ --
+ -- >  import System.Environment
+ -- >  import Control.Applicative
+ -- >  import Data.Chronograph
+ -- >
+ -- >  import Text.Printf
+ -- >
+ -- >  formatOutput :: FilePath -> Chronograph Int -> String
+ -- >  formatOutput fp chr = printf "%s :: %d, %s" fp (val chr) (show $ measure chr)
+ -- >
+ -- >  procFile :: FilePath -> IO ()
+ -- >  procFile fp = do
+ -- >      doc <- readFile fp
+ -- >      let wc = length $ lines doc
+ -- >      putStrLn $ formatOutput fp (chrono wc)
+ --
+ -- 'chrono' creates a chronograph that evaluates its input as far as 'seq' would.
+ -- In this case the input 'wc' is an Int, so 'chrono' fully evaluates it.
+ -- deepseq-style evaluation is performed by 'chronoNF', and custom evaluation
+ -- strategies can be implemented with 'chronoBy'.
+ --
+ -- although 'wc' is a pure value, IO is lazily performed in its evalution.
+ -- This IO cost is included in 'chrono's measurement.
+ --
+ -- You can explicitly include timings of IO actions as well:
+ --
+ -- >  fileLinesIO :: FilePath -> IO Int
+ -- >  fileLinesIO fp = length . lines <$> readFile fp
+ -- >
+ -- >  procIO :: FilePath -> IO ()
+ -- >  procIO fp = do
+ -- >    wc <- chronoIO $ fileLinesIO fp
+ -- >    putStrLn $ formatOutput fp wc
+ --
+ -- >  main :: IO ()
+ -- >  main = do
+ -- >      args <- getArgs
+ -- >      putStrLn "pure Chronograph"
+ -- >      mapM_ procFile args
+ -- >      putStrLn "IO Chronograph"
+ -- >      mapM_ procIO args
+ --
 module Data.Chronograph (
   Chronograph (..)
 -- * chrono pure stuff
