@@ -14,16 +14,11 @@
  -- >  import Control.Applicative
  -- >  import Data.Chronograph
  -- >
- -- >  import Text.Printf
- -- >
- -- >  formatOutput :: FilePath -> Chronograph Int -> String
- -- >  formatOutput fp chr = printf "%s :: %d, %s" fp (val chr) (show $ measure chr)
- -- >
- -- >  procFile :: FilePath -> IO ()
+ -- >  procFile :: FilePath -> IO Int
  -- >  procFile fp = do
  -- >      doc <- readFile fp
  -- >      let wc = length $ lines doc
- -- >      putStrLn $ formatOutput fp (chrono wc)
+ -- >      chronoPrint "time to eval length" (chrono wc)
  --
  -- 'chrono' creates a chronograph that evaluates its input as far as 'seq' would.
  -- In this case the input 'wc' is an Int, so 'chrono' fully evaluates it.
@@ -41,7 +36,7 @@
  -- >  procIO :: FilePath -> IO ()
  -- >  procIO fp = do
  -- >    wc <- chronoIO $ fileLinesIO fp
- -- >    putStrLn $ formatOutput fp wc
+ -- >    void $ chronoPrint "fileLinesIO" wc
  --
  -- >  main :: IO ()
  -- >  main = do
@@ -62,6 +57,10 @@ module Data.Chronograph (
 , chronoIO
 , chronoNFIO
 , chronoIOBy
+-- * utility functions
+, chronoPrint
+, chronoTraceEvent
+, chronoTraceEventIO
 ) where
 
 import Control.Applicative
@@ -124,3 +123,21 @@ chronoIOBy eval mx = do
     t1 <- eval val `seq` getCurrentTime
     let measure = t1 .-. t0
     return $ Chronograph {val, measure}
+
+----------------------------------------------------------
+-- utility functions
+
+-- | print the measure to stdout and return the value
+chronoPrint :: String -> Chronograph a -> IO a
+chronoPrint x cr =
+    val cr <$ putStrLn (x ++ ": " ++ humanTimeDiff (measure cr))
+
+-- | write the measure to the ghc eventlog and return the value
+chronoTraceEvent :: String -> Chronograph a -> a
+chronoTraceEvent x cr =
+    traceEvent (x ++ ": " ++ humanTimeDiff (measure cr)) $ val cr
+
+-- | write the measure to the ghc eventlog and return the value in IO
+chronoTraceEventIO :: String -> Chronograph a -> IO a
+chronoTraceEventIO x cr =
+    val cr <$ traceEventIO (x ++ ": " ++ humanTimeDiff (measure cr))
