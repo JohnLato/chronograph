@@ -64,14 +64,18 @@ module Data.Chronograph (
 , chronoIOBy
 ) where
 
+import Control.Applicative
 import Control.DeepSeq
-import Data.Time (NominalDiffTime, getCurrentTime, diffUTCTime)
+import Data.Thyme (NominalDiffTime, getCurrentTime)
+import Data.Thyme.Format.Human
+import Data.AffineSpace ((.-.))
+import Debug.Trace
 import GHC.Generics
 import System.IO.Unsafe (unsafePerformIO)
 
 data Chronograph a = Chronograph
-    { val :: a
-    , measure :: NominalDiffTime
+    { measure :: {-# UNPACK #-} !NominalDiffTime
+    , val :: a
     } deriving (Show, Generic)
 
 ----------------------------------------------------------
@@ -91,7 +95,7 @@ chronoBy eval x =
     let measure = unsafePerformIO $ do
                     t0 <- getCurrentTime
                     t1 <- eval x `seq` getCurrentTime
-                    return (t1 `diffUTCTime` t0)
+                    return (t1 .-. t0)
     in Chronograph {val = measure `seq` x, measure }
 
 ----------------------------------------------------------
@@ -118,6 +122,5 @@ chronoIOBy eval mx = do
     t0 <- getCurrentTime
     val  <- mx
     t1 <- eval val `seq` getCurrentTime
-    let measure = t1 `diffUTCTime` t0
-
+    let measure = t1 .-. t0
     return $ Chronograph {val, measure}
