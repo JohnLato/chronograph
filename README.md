@@ -56,18 +56,15 @@ Here's a full example, demonstrating both pure and IO functions:
     > procFile fp = do
     >     doc <- readFile fp
     >     let wc = length $ lines doc
-    >     putStrLn $ formatOutput fp (chrono wc)
+    >     void $ chronoPrint "time to calc length" (chrono wc)
     >
     > procIO :: FilePath -> IO ()
     > procIO fp = do
     >     wc <- chronoIO $ fileLinesIO fp
-    >     putStrLn $ formatOutput fp wc
+    >     void $ chronoPrint "" wc
     >
     > fileLinesIO :: FilePath -> IO Int
     > fileLinesIO fp = length . lines <$> readFile fp
-    >
-    > formatOutput :: FilePath -> Chronograph Int -> String
-    > formatOutput fp chr = printf "%s :: %d, %s" fp (val chr) (show $ measure chr)
     >
     > main :: IO ()
     > main = do
